@@ -21,8 +21,8 @@ use 5.010;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
-# This file is part of Finance-PaycheckRecords 0.01 (March 9, 2013)
+our $VERSION = '1.000';
+# This file is part of Finance-PaycheckRecords 1.000 (July 5, 2014)
 
 use Carp qw(croak);
 use HTML::TableExtract 2.10;
@@ -32,11 +32,17 @@ use List::Util qw(sum);
 use Exporter 5.57 'import';     # exported import method
 our @EXPORT = qw(parse_paystub paystub_to_QIF);
 
+# This indicates which HTML::TableExtract methods to call based on
+# the keyword passed to parse_paystub.
 our %parse_method = qw(
   file   parse_file
   string parse
 );
 
+our %eof_after_parse = (string => 1);
+
+# When converting a paystub to QIF, this controls which column
+# contains the values that will be used in the transaction.
 our $current = 'Current';
 
 #=====================================================================
@@ -51,6 +57,7 @@ sub parse_paystub
 
   my $te = HTML::TableExtract->new;
   $te->$parse_method($input);
+  $te->eof if $eof_after_parse{$input_type};
 
   my %paystub;
 
@@ -186,8 +193,8 @@ Finance::PaycheckRecords - Parse data from PaycheckRecords.com
 
 =head1 VERSION
 
-This document describes version 0.01 of
-Finance::PaycheckRecords, released March 9, 2013.
+This document describes version 1.000 of
+Finance::PaycheckRecords, released July 5, 2014.
 
 =head1 SYNOPSIS
 
@@ -324,7 +331,7 @@ Would produce this hashref:
 
   $qif_entry = paystub_to_QIF($paystub, \%config);
 
-This function takes a C<$paystub> as returned from C<parse_paystub>
+This function takes a C<$paystub> hashref as returned from C<parse_paystub>
 and returns a QIF record with data from the paystub.  It returns only
 a single record; you'll need to add a header (e.g. C<"!Type:Bank\n">)
 to form a valid QIF file.
@@ -344,7 +351,7 @@ from your income instead of added to it.
 
 =item C<income>
 
-A hashref that describes which entries in C<$paystub->{split}>
+A hashref that describes which entries in C<< $paystub->{split} >>
 describe income and what category to use for each row in that section.
 The key is the section name, and the value is a hashref keyed by the
 first column.  That value is an arrayref: S<C<[ $category, $memo ]>>.
@@ -363,6 +370,9 @@ The name of the key in C<< $paystub->{totals} >> that contains the net
 deposit amount (default C<Net This Check>).
 
 =back
+
+The F<example> directory in this distribution contains a sample
+paystub along with a program to generate a complete QIF file from it.
 
 =head1 SEE ALSO
 
@@ -405,11 +415,11 @@ or through the web interface at
 L<< http://rt.cpan.org/Public/Bug/Report.html?Queue=Finance-PaycheckRecords >>.
 
 You can follow or contribute to Finance-PaycheckRecords's development at
-L<< http://github.com/madsen/finance-paycheckrecords >>.
+L<< https://github.com/madsen/finance-paycheckrecords >>.
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2013 by Christopher J. Madsen.
+This software is copyright (c) 2014 by Christopher J. Madsen.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
